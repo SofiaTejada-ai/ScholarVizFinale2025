@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# Node / React
+node_modules/
+dist/
+build/
+
+# Data / models / logs
+checkpoints/
+data/
+wandb/
+logs/
+*.pth
+*.pt
+*.ckpt
+
+# OS/editor junk
+.DS_Store
+.idea/
+.vscode/
