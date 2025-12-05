@@ -1,99 +1,61 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import axios from "axios";
-import mermaid from "mermaid";
-import "./App.css";
-
-mermaid.initialize({ startOnLoad: false });
+import MermaidDiagram from "./MermaidDiagram";
 
 function App() {
   const [topic, setTopic] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [diagramOk, setDiagramOk] = useState(false);
-  const [diagramError, setDiagramError] = useState("");
 
-  useEffect(() => {
-    if (!result?.diagram_mermaid) {
-      setDiagramOk(false);
-      setDiagramError("");
-      return;
-    }
-    try {
-      mermaid.parse(result.diagram_mermaid);
-      setDiagramOk(true);
-      setDiagramError("");
-      requestAnimationFrame(() => {
-        mermaid.init(undefined, ".mermaid");
-        const svgs = document.querySelectorAll(".mermaid svg");
-        svgs.forEach((svg) => {
-          svg.style.width = "100%";
-          svg.style.height = "auto";
-          svg.style.maxHeight = "480px";
-          svg.style.background = "#ffffff";
-          svg.style.borderRadius = "16px";
-        });
-      });
-    } catch (e) {
-      console.error("Mermaid parse error", e);
-      setDiagramOk(false);
-      setDiagramError("The model produced Mermaid code that could not be rendered.");
-    }
-  }, [result?.diagram_mermaid]);
-
-  const handleAsk = async () => {
-    if (!topic.trim()) return;
-    setLoading(true);
+  const handleAnalyze = async () => {
     setError("");
     setResult(null);
-    setDiagramOk(false);
-    setDiagramError("");
+    if (!topic.trim()) return;
+
     try {
+      setLoading(true);
       const res = await axios.post("http://localhost:8000/api/concept", {
         topic,
       });
       setResult(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
       setError("Request failed. Make sure the FastAPI backend is running on :8000.");
     } finally {
       setLoading(false);
     }
   };
 
+  const citations = result?.citations || [];
+  const hasFigure = !!result?.figure_image_url;
+  const hasMermaid = !!result?.diagram_mermaid;
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        padding: "40px 16px",
-        background:
-          "radial-gradient(circle at top, #111827 0%, #020617 45%, #000000 100%)",
+        margin: 0,
+        padding: "32px 0",
+        background: "radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%)",
         color: "#e5e7eb",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        display: "flex",
-        justifyContent: "center",
+        fontFamily: '"Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
       <div
         style={{
-          width: "100%",
-          maxWidth: 1120,
-          background: "rgba(15,23,42,0.95)",
-          borderRadius: 24,
-          padding: 32,
-          boxShadow:
-            "0 24px 60px rgba(15,23,42,0.9), 0 0 0 1px rgba(148,163,184,0.15)",
-          border: "1px solid rgba(148,163,184,0.3)",
-          backdropFilter: "blur(18px)",
+          maxWidth: "1120px",
+          margin: "0 auto",
+          padding: "0 20px",
         }}
       >
-        <header style={{ marginBottom: 24 }}>
+        <header style={{ marginBottom: 32, textAlign: "center" }}>
           <div
             style={{
-              fontSize: 13,
-              letterSpacing: "0.16em",
+              fontSize: 12,
+              letterSpacing: "0.25em",
               textTransform: "uppercase",
-              color: "#a5b4fc",
+              color: "#64748b",
               marginBottom: 8,
             }}
           >
@@ -101,74 +63,77 @@ function App() {
           </div>
           <h1
             style={{
-              fontSize: 28,
-              fontWeight: 600,
-              color: "#f9fafb",
+              fontSize: 32,
+              fontWeight: 700,
               marginBottom: 8,
             }}
           >
             Cybersecurity Concept Explorer
           </h1>
-          <p style={{ fontSize: 14, color: "#9ca3af", maxWidth: 640 }}>
-            Type a cybersecurity topic and ScholarViz will generate a clear
-            explanation, a structured diagram you can actually read, and recent
-            scholarly citations.
+          <p style={{ fontSize: 14, color: "#94a3b8" }}>
+            Type a cybersecurity topic and ScholarViz will generate a clear explanation,
+            a visual diagram or extracted figure, and recent scholarly citations.
           </p>
         </header>
 
-        <section
+        <div
           style={{
             display: "flex",
             gap: 12,
+            alignItems: "center",
             marginBottom: 24,
-            flexWrap: "wrap",
+            background: "rgba(15,23,42,0.9)",
+            borderRadius: 999,
+            padding: "8px 10px 8px 16px",
+            border: "1px solid rgba(148,163,184,0.24)",
           }}
         >
           <input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. LLM jailbreaks and prompt injection, SIEM pipeline, zero trust architecture"
+            placeholder="Zero trust architectures for microservices"
             style={{
               flex: 1,
-              minWidth: 260,
-              padding: "10px 12px",
-              borderRadius: 999,
-              border: "1px solid rgba(148,163,184,0.5)",
-              backgroundColor: "rgba(15,23,42,0.9)",
+              border: "none",
+              outline: "none",
+              background: "transparent",
               color: "#e5e7eb",
               fontSize: 14,
-              outline: "none",
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleAnalyze();
             }}
           />
           <button
-            onClick={handleAsk}
+            onClick={handleAnalyze}
             disabled={loading}
             style={{
-              padding: "10px 20px",
-              borderRadius: 999,
               border: "none",
-              background:
-                "linear-gradient(to right, #4f46e5, #7c3aed, #ec4899)",
-              color: "white",
+              borderRadius: 999,
+              padding: "8px 20px",
               fontSize: 14,
-              fontWeight: 500,
+              fontWeight: 600,
+              color: "#f9fafb",
+              background:
+                "linear-gradient(135deg, rgba(96,165,250,1), rgba(14,165,233,1))",
+              boxShadow: "0 10px 25px rgba(37,99,235,0.35)",
               cursor: loading ? "default" : "pointer",
               opacity: loading ? 0.7 : 1,
               whiteSpace: "nowrap",
             }}
           >
-            {loading ? "Analyzing…" : "Generate"}
+            {loading ? "Analyzing..." : "Analyze Concept"}
           </button>
-        </section>
+        </div>
 
         {error && (
           <div
             style={{
-              marginBottom: 16,
-              padding: "10px 12px",
+              marginBottom: 20,
+              padding: "10px 14px",
               borderRadius: 12,
-              background: "rgba(127,29,29,0.85)",
-              color: "#fee2e2",
+              background: "rgba(127,29,29,0.2)",
+              color: "#fecaca",
               fontSize: 13,
             }}
           >
@@ -176,144 +141,142 @@ function App() {
           </div>
         )}
 
-        {result && result.ok && (
+        {result && (
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(0, 5fr) minmax(0, 5fr)",
-              gap: 24,
-              alignItems: "stretch",
+              gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)",
+              gap: 20,
+              alignItems: "flex-start",
             }}
           >
-            <div>
+            <section
+              style={{
+                background: "rgba(15,23,42,0.96)",
+                borderRadius: 20,
+                padding: 20,
+                border: "1px solid rgba(148,163,184,0.22)",
+              }}
+            >
               <h2
                 style={{
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 600,
-                  color: "#e5e7eb",
-                  marginBottom: 8,
+                  marginBottom: 6,
                 }}
               >
-                {result.topic}
+                Summary
               </h2>
               <p
                 style={{
                   fontSize: 14,
                   lineHeight: 1.6,
-                  color: "#d1d5db",
+                  color: "#cbd5f5",
                   whiteSpace: "pre-wrap",
                 }}
               >
-                {result.explanation}
+                {result.summary}
               </p>
+            </section>
 
-              <div style={{ marginTop: 24 }}>
-                <h3
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: "#e5e7eb",
-                    marginBottom: 8,
-                  }}
-                >
-                  Recent scholarly sources
-                </h3>
-                {result.citations && result.citations.length > 0 ? (
-                  <ol
-                    style={{
-                      margin: 0,
-                      paddingLeft: 18,
-                      fontSize: 13,
-                      color: "#cbd5f5",
-                    }}
-                  >
-                    {result.citations.map((c, i) => (
-                      <li key={i} style={{ marginBottom: 6 }}>
-                        <div style={{ fontWeight: 500 }}>
-                          {c.title}{" "}
-                          {c.year ? (
-                            <span style={{ color: "#9ca3af" }}>({c.year})</span>
-                          ) : null}
-                        </div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                          {c.authors}
-                          {c.venue ? ` · ${c.venue}` : ""}
-                          {typeof c.cited_by_count === "number"
-                            ? ` · cited ${c.cited_by_count}×`
-                            : ""}
-                        </div>
-                        {c.url && (
-                          <a
-                            href={c.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: 12,
-                              color: "#4f46e5",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            view paper
-                          </a>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#9ca3af",
-                      margin: 0,
-                    }}
-                  >
-                    No citations found for this topic.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3
+            <section
+              style={{
+                background: "rgba(15,23,42,0.96)",
+                borderRadius: 20,
+                padding: 20,
+                border: "1px solid rgba(148,163,184,0.22)",
+              }}
+            >
+              <h2
                 style={{
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: 600,
-                  color: "#e5e7eb",
-                  marginBottom: 8,
-                  textAlign: "center",
+                  marginBottom: 10,
                 }}
               >
-                Diagram
-              </h3>
-              {diagramOk && result.diagram_mermaid ? (
-                <div
-                  className="mermaid"
-                  style={{
-                    backgroundColor: "#f9fafb",
-                    borderRadius: 20,
-                    padding: 20,
-                    border: "1px solid rgba(15,23,42,0.12)",
-                    overflowX: "auto",
-                    minHeight: 360,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#020617",
-                  }}
-                >
-                  {result.diagram_mermaid}
-                </div>
-              ) : result.diagram_mermaid && diagramError ? (
+                Diagrams
+              </h2>
+
+              {hasFigure || hasMermaid ? (
                 <div
                   style={{
-                    fontSize: 13,
-                    color: "#f87171",
-                    background: "rgba(127,29,29,0.5)",
-                    borderRadius: 12,
-                    padding: 10,
+                    display: "grid",
+                    gridTemplateColumns: hasFigure && hasMermaid ? "1fr 1fr" : "1fr",
+                    gap: 12,
+                    alignItems: "stretch",
                   }}
                 >
-                  {diagramError}
+                  {hasFigure && (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          marginBottom: 6,
+                          color: "#e5e7eb",
+                        }}
+                      >
+                        Research figure
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 18,
+                          overflow: "hidden",
+                          background: "#020617",
+                          border: "1px solid rgba(148,163,184,0.3)",
+                        }}
+                      >
+                        <img
+                          src={result.figure_image_url}
+                          alt={result.figure_caption || "Extracted research figure"}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            height: "auto",
+                          }}
+                        />
+                      </div>
+                      {result.figure_caption && (
+                        <p
+                          style={{
+                            marginTop: 8,
+                            fontSize: 12,
+                            color: "#9ca3af",
+                          }}
+                        >
+                          {result.figure_caption}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {hasMermaid && (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          marginBottom: 6,
+                          color: "#e5e7eb",
+                        }}
+                      >
+                        Mermaid architecture view
+                      </div>
+                      <MermaidDiagram chart={result.diagram_mermaid} />
+                      {!hasFigure && (
+                        <p
+                          style={{
+                            marginTop: 8,
+                            fontSize: 12,
+                            color: "#94a3b8",
+                          }}
+                        >
+                          No strongly relevant research figure was found for this topic,
+                          so a Mermaid diagram was generated instead.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p
@@ -325,8 +288,60 @@ function App() {
                   No diagram available for this query.
                 </p>
               )}
-            </div>
+            </section>
           </div>
+        )}
+
+        {result && citations.length > 0 && (
+          <section
+            style={{
+              marginTop: 20,
+              background: "rgba(15,23,42,0.96)",
+              borderRadius: 20,
+              padding: 20,
+              border: "1px solid rgba(148,163,184,0.22)",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                marginBottom: 10,
+              }}
+            >
+              Most recent citations
+            </h2>
+            <ol style={{ paddingLeft: 18, fontSize: 14 }}>
+              {citations.map((c, i) => (
+                <li key={i} style={{ marginBottom: 8 }}>
+                  <strong>{c.title}</strong>
+                  {c.year && ` (${c.year})`}
+                  {c.venue && (
+                    <span>
+                      {" "}
+                      · <em>{c.venue}</em>
+                    </span>
+                  )}
+                  <br />
+                  {c.authors && (
+                    <span style={{ color: "#9ca3af" }}>{c.authors}</span>
+                  )}
+                  {c.url && (
+                    <div>
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 13, color: "#60a5fa" }}
+                      >
+                        link
+                      </a>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
         )}
       </div>
     </div>
