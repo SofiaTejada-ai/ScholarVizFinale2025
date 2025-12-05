@@ -7,10 +7,12 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showFigureSummary, setShowFigureSummary] = useState(false);
 
   const handleAnalyze = async () => {
     setError("");
     setResult(null);
+    setShowFigureSummary(false);
     if (!topic.trim()) return;
 
     try {
@@ -246,6 +248,46 @@ function App() {
                         >
                           {result.figure_caption}
                         </p>
+                      )}
+
+                      {result.figure_summary && (
+                        <div
+                          style={{
+                            marginTop: 10,
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              setShowFigureSummary((prev) => !prev)
+                            }
+                            style={{
+                              border: "none",
+                              borderRadius: 999,
+                              padding: "6px 14px",
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: "#0f172a",
+                              background:
+                                "linear-gradient(135deg, rgba(248,250,252,1), rgba(226,232,240,1))",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Summary
+                          </button>
+                          {showFigureSummary && (
+                            <p
+                              style={{
+                                marginTop: 8,
+                                fontSize: 13,
+                                lineHeight: 1.6,
+                                color: "#cbd5f5",
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {result.figure_summary}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

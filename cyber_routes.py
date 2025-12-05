@@ -218,7 +218,15 @@ async def try_extract_figure_from_relevant_pdf(
                 for img in images:
                     xref = img[0]
                     try:
-                        pix = fitz.Pixmap(doc, xref)
+                        rects = page.get_image_rects(xref)
+                        if rects:
+                            rect = rects[0]
+                            pix = page.get_pixmap(
+                                matrix=fitz.Matrix(2, 2),
+                                clip=rect,
+                            )
+                        else:
+                            pix = fitz.Pixmap(doc, xref)
                         if pix.width < 200 or pix.height < 150:
                             continue
                         if _looks_logo_like(pix):
@@ -284,6 +292,26 @@ async def concept(payload: dict = Body(...)):
     )
     diagram_mermaid = ask_gpt(mermaid_prompt)
     figure_image_url, figure_caption = await try_extract_figure_from_relevant_pdf(works, topic)
+    figure_summary = None
+    if figure_image_url:
+        main_citation = citations[0] if citations else None
+        meta_text = ""
+        if main_citation:
+            meta_text = (
+                f"Title: {main_citation['title']}. "
+                f"Venue: {main_citation.get('venue') or ''}. "
+                f"Year: {main_citation.get('year') or ''}."
+            )
+        figure_prompt = (
+            "You are explaining a cybersecurity research diagram to an undergraduate CS student.\n"
+            f"Topic: {topic}\n"
+            f"Figure caption: {figure_caption or ''}\n"
+            f"{meta_text}\n"
+            "Write 150–220 words that first describe at a high level what the diagram is showing, "
+            "then summarize the main idea and contribution of the research article it comes from. "
+            "Do not use bullet points or markdown symbols. Use clear, plain paragraphs."
+        )
+        figure_summary = ask_gpt(figure_prompt)
     return JSONResponse(
         {
             "ok": True,
@@ -302,5 +330,6 @@ async def concept(payload: dict = Body(...)):
             ],
             "figure_image_url": figure_image_url,
             "figure_caption": figure_caption,
+            "figure_summary": figure_summary,
         }
     )
